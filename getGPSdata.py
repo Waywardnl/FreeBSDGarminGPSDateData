@@ -9,6 +9,7 @@
 #from datetime import datetime
 #from datetime import timedelta
 from datetime import date, timedelta
+import subprocess
 
 readlogfile = '/var/log/gps0.log'
 count = 0
@@ -118,6 +119,14 @@ if (count > 7):
             date2 = date1 + timedelta(weeks=correctionweeks)
             print ("Calculated Date: ", date2)
 
+            ## Calculate Time
+            uur = uur + hourcorrect
+            print ("Corrected Time --> uur: ", uur, "minuten: ", minuten, "seconden: ", seconden)
+
+            cli_str = f"date {uur}{minuten}.{seconden}"
+            print ("Command Line: ", cli_str)
+            ## Execute command line with Python
+            subprocess.run(cli_str, shell=True)
 else:
     print ("Not enough data in: ", readlogfile, " --> There are ", count, " lines detected")
 
