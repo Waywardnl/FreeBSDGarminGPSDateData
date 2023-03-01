@@ -123,8 +123,11 @@ if (count > 7):
             uur = uur + hourcorrect
             print ("Corrected Time --> uur: ", uur, "minuten: ", minuten, "seconden: ", seconden)
 
-            cli_str = f"date {uur}{minuten}.{seconden}"
+            ## Add Leading Zero's: https://www.geeksforgeeks.org/how-to-add-leading-zeros-to-a-number-in-python/
+            #
+            cli_str = f"date {uur:02d}{minuten:02d}.{seconden:02d}"
             print ("Command Line: ", cli_str)
+
             ## Execute command line with Python
             subprocess.run(cli_str, shell=True)
 else:
