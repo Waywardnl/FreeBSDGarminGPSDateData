@@ -139,6 +139,13 @@ if (count > 7):
 
             ## Execute command line with Python
             subprocess.run(cli_str, shell=True)
+
+            print ("Lattide: ", lattitude)
+            print ("NorthSouth: ", northsouth)
+            print ("Longtitude: ", longtitude)
+            print ("EastWest: ", eastwest)
+            print ("NrSat: ", nrsat)
+
 else:
     print ("Not enough data in: ", readlogfile, " --> There are ", count, " lines detected")
 
