@@ -123,9 +123,18 @@ if (count > 7):
             uur = uur + hourcorrect
             print ("Corrected Time --> uur: ", uur, "minuten: ", minuten, "seconden: ", seconden)
 
+            ## Handle the date
+            #
+            cmddatum = str(date2)
+            cmdjaar, cmdmaand, cmddag = cmddatum.split('-')
+            cmdjaar = cmdjaar[2:4]
+            print ("Laatste 2 getallen van het jaar: ", cmdjaar)
+            print ("Maand: ", cmdmaand)
+            print ("Dag: ", cmddag)
+
             ## Add Leading Zero's: https://www.geeksforgeeks.org/how-to-add-leading-zeros-to-a-number-in-python/
             #
-            cli_str = f"date {uur:02d}{minuten:02d}.{seconden:02d}"
+            cli_str = f"date {cmdjaar}{cmdmaand}{cmddag}{uur:02d}{minuten:02d}.{seconden:02d}"
             print ("Command Line: ", cli_str)
 
             ## Execute command line with Python
