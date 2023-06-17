@@ -10,6 +10,7 @@
 #from datetime import timedelta
 from datetime import date, timedelta
 import subprocess
+import time
 
 readlogfile = '/var/log/gps0.log'
 count = 0
@@ -23,131 +24,166 @@ correctionweeks = 1024
 #
 correctionyear = 2000
 
-# open file in read mode and check how many lines are in the log file
-# it can be that the log has been rotated and there is no data avaible.
+## How many loops before we want todo stuff to prevent losers todo BAD things
 #
-# We need at least 7 lines of data to let this script run
-#
-with open(readlogfile, 'r') as fp:
-    for count, line in enumerate(fp):
-        pass
-    count = count + 1
+maxloops = 50
+nrloops = 0
+succesvol = 0
 
-if (count > 7):
-    with open(readlogfile, 'r') as f:
-        lines = f.read().splitlines()
-        counting = -7
-        while counting < 0:
-            last_line = lines[(counting)]
+while ( nrloops < maxloops ) or ( succesvol > 0 ):
+    # open file in read mode and check how many lines are in the log file
+    # it can be that the log has been rotated and there is no data avaible.
+    #
+    # We need at least 7 lines of data to let this script run
+    #
+    with open(readlogfile, 'r') as fp:
+        for count, line in enumerate(fp):
+            pass
+        count = count + 1
 
-            print (counting, ":", last_line)
+    if (count > 7):
+        with open(readlogfile, 'r') as f:
+            lines = f.read().splitlines()
+            counting = -7
+            while counting < 0:
+                last_line = lines[(counting)]
 
-            if (last_line.find('$GPGGA') != -1):
-                ##
-                ## Found $GPGGA GPS Tag for time and position Data
-                ##
-                print ("###################################################################################################")
-                print ("## Found $GPGGA: UTC Time, latitude, North/South, Longtitude, East/West, Satallites Used, HDOP, MSL Altitude, Unit, Geoid Seperation, Units, Age off diff., Diff. Ref station ID, Checksum")
-                print ("###################################################################################################")
+                print (counting, ":", last_line)
 
-                splitdata = last_line.split(",")
+                if (last_line.find('$GPGGA') != -1):
+                    ##
+                    ## Found $GPGGA GPS Tag for time and position Data
+                    ##
+                    print ("###################################################################################################")
+                    print ("## Found $GPGGA: UTC Time, latitude, North/South, Longtitude, East/West, Satallites Used, HDOP, MSL Altitude, Unit, Geoid Seperation, Units, Age off diff., Diff. Ref station ID, Checksum")
+                    print ("###################################################################################################")
 
-                tijd = (splitdata[1])
+                    if (len(last_line) > 20):
+                        splitdata = last_line.split(",")
 
-                uur = int(tijd[0:2])
-                minuten = int(tijd[2:4])
-                seconden = int(tijd[4:6])
+                        tijd = (splitdata[1])
 
-                lattitude = (splitdata[2])
-                northsouth = (splitdata[3])
-                longtitude = (splitdata[4])
-                eastwest = (splitdata[5])
-                nrsat = (splitdata[6])
+                        uur = int(tijd[0:2])
+                        minuten = int(tijd[2:4])
+                        seconden = int(tijd[4:6])
 
-                print ("Tijd :", tijd, " --> Uur :", uur, " / Minuten :", minuten, " / Seconden :", seconden)
-            elif (last_line.find('$GPRMC') != -1):
-                ##
-                ## Found $GPRMC GPS Tag for time and position Data
-                ##
-                print ("###################################################################################################")
-                print ("## Found $GPRMC: UTC Time, Status Valid/Invalid, latitude, North/South, Longtitude, East/West, Knots, Degrees, Date (Needs to be corrected), Magnetic Variation (East/West), Mode, Checksum")
-                print ("###################################################################################################")
+                        lattitude = (splitdata[2])
+                        northsouth = (splitdata[3])
+                        longtitude = (splitdata[4])
+                        eastwest = (splitdata[5])
+                        nrsat = (splitdata[6])
 
-                splitdata = last_line.split(",")
+                        print ("Succesfull retrieval of Time --> Tijd :", tijd, " --> Uur :", uur, " / Minuten :", minuten, " / Seconden :", seconden)
+                        timesuccess = 1
+                    else:
+                       print ("GPGGA String is too short, time & coordinates are UNsuccesfull")
+                       timesuccess = 0
+                elif (last_line.find('$GPRMC') != -1):
+                    ##
+                    ## Found $GPRMC GPS Tag for time and position Data
+                    ##
+                    print ("###################################################################################################")
+                    print ("## Found $GPRMC: UTC Time, Status Valid/Invalid, latitude, North/South, Longtitude, East/West, Knots, Degrees, Date (Needs to be corrected), Magnetic Variation (East/West), Mode, Checksum")
+                    print ("###################################################################################################")
 
-                datastatus = (splitdata[2])
-                datum = (splitdata[9])
+                    print ("Investigating GPRMC line: ", last_line)
+                    if (len(last_line) > 20):
+                        splitdata = last_line.split(",")
 
-                dag = int(datum[0:2])
-                maand = int(datum[2:4])
-                jaar = int(datum[4:6])
+                        datastatus = (splitdata[2])
+                        datum = (splitdata[9])
 
-                print ("Datum :", datum, " --> Dag :", dag, " / Maand :", maand, " / Jaar :", jaar)
-            else:
-                print ("$GPGGA = MISSING! & $GPRMC = MISSING!")
-            counting = counting +1
+                        dag = int(datum[0:2])
+                        maand = int(datum[2:4])
+                        jaar = int(datum[4:6])
 
-        ## Calculate date & Time
-        #
-        if (jaar != ""):
-            #datumtijd = jaar, "-", maand, "-", dag, " ", uur, ":", minuten, ":", seconden
-            #datumtijd = "2002-12-19 12:03:44"
-            hetjaar = jaar
+                        print ("Succesfull retrieval of date --> Datum :", datum, " --> Dag :", dag, " / Maand :", maand, " / Jaar :", jaar)
+                        datesuccess = 1
+                    else:
+                        print ("GPRMC String is too short, date is unsuccesfull")
+                        datesuccess = 0
+                else:
+                    print ("$GPGGA = MISSING! & $GPRMC = MISSING!")
+                counting = counting +1
+                time.sleep(5)
 
-            if (hetjaar < 100):
-                hetjaar = hetjaar + correctionyear
-
-            #if (len(hetjaar) < 2):
-            #    hetjaar = "0{hetjaar}"
+            ## Calculate date & Time
             #
-            #if (len(hetjaar) < 4):
-            #    hetjaar = "20{hetjaar}"
+            if (jaar != ""):
+                #datumtijd = jaar, "-", maand, "-", dag, " ", uur, ":", minuten, ":", seconden
+                #datumtijd = "2002-12-19 12:03:44"
+                hetjaar = jaar
 
-            datumtijd = f"{jaar}-{maand}-{dag} {uur}:{minuten}:{seconden}"
+                if (hetjaar < 100):
+                    hetjaar = hetjaar + correctionyear
 
-            strdatumtijd = str(datumtijd)
-            print ("STRDatumTijd :", strdatumtijd)
-            #dt = datetime.strptime(strdatumtijd, '%Y-%m-%d %H:%M:%S')
-            #print ("DatumTijd :", dt)
+                #if (len(hetjaar) < 2):
+                #    hetjaar = "0{hetjaar}"
+                #
+                #if (len(hetjaar) < 4):
+                #    hetjaar = "20{hetjaar}"
 
-            #hetjaar = 2023
-            #nieuwjaar = int(hetjaar)
+                datumtijd = f"{jaar}-{maand}-{dag} {uur}:{minuten}:{seconden}"
 
-            #print (type(hetjaar))
+                strdatumtijd = str(datumtijd)
+                print ("STRDatumTijd :", strdatumtijd)
+                #dt = datetime.strptime(strdatumtijd, '%Y-%m-%d %H:%M:%S')
+                #print ("DatumTijd :", dt)
 
-            date1 = date(int(hetjaar), maand, dag)
-            date2 = date1 + timedelta(weeks=correctionweeks)
-            print ("Calculated Date: ", date2)
+                #hetjaar = 2023
+                #nieuwjaar = int(hetjaar)
 
-            ## Calculate Time
-            uur = uur + hourcorrect
-            print ("Corrected Time --> uur: ", uur, "minuten: ", minuten, "seconden: ", seconden)
+                #print (type(hetjaar))
 
-            ## Handle the date
-            #
-            cmddatum = str(date2)
-            cmdjaar, cmdmaand, cmddag = cmddatum.split('-')
-            cmdjaar = cmdjaar[2:4]
-            print ("Laatste 2 getallen van het jaar: ", cmdjaar)
-            print ("Maand: ", cmdmaand)
-            print ("Dag: ", cmddag)
+                date1 = date(int(hetjaar), maand, dag)
+                date2 = date1 + timedelta(weeks=correctionweeks)
+                print ("Calculated Date: ", date2)
 
-            ## Add Leading Zero's: https://www.geeksforgeeks.org/how-to-add-leading-zeros-to-a-number-in-python/
-            #
-            cli_str = f"date {cmdjaar}{cmdmaand}{cmddag}{uur:02d}{minuten:02d}.{seconden:02d}"
-            print ("Command Line: ", cli_str)
+                ## Calculate Time
+                uur = uur + hourcorrect
+                print ("Corrected Time --> uur: ", uur, "minuten: ", minuten, "seconden: ", seconden)
 
-            ## Execute command line with Python
-            subprocess.run(cli_str, shell=True)
+                ## Handle the date
+                #
+                cmddatum = str(date2)
+                cmdjaar, cmdmaand, cmddag = cmddatum.split('-')
+                cmdjaar = cmdjaar[2:4]
+                print ("Laatste 2 getallen van het jaar: ", cmdjaar)
+                print ("Maand: ", cmdmaand)
+                print ("Dag: ", cmddag)
 
-            print ("Lattide: ", lattitude)
-            print ("NorthSouth: ", northsouth)
-            print ("Longtitude: ", longtitude)
-            print ("EastWest: ", eastwest)
-            print ("NrSat: ", nrsat)
+                ## Add Leading Zero's: https://www.geeksforgeeks.org/how-to-add-leading-zeros-to-a-number-in-python/
+                #
+                cli_str = f"date {cmdjaar}{cmdmaand}{cmddag}{uur:02d}{minuten:02d}.{seconden:02d}"
+                print ("Command Line: ", cli_str)
 
-else:
-    print ("Not enough data in: ", readlogfile, " --> There are ", count, " lines detected")
+                ## Execute command line with Python
+                subprocess.run(cli_str, shell=True)
+
+                print ("Lattide: ", lattitude)
+                print ("NorthSouth: ", northsouth)
+                print ("Longtitude: ", longtitude)
+                print ("EastWest: ", eastwest)
+                print ("NrSat: ", nrsat)
+
+                if (float(lattitude) > 5150.2000) and (float(lattitude) < 5150.3000):
+                    print ("Lattitude within range", lattitude)
+                else:
+                    print ("Lattitude outside range", lattitude)
+
+                if (float(longtitude) > 442.4500) and (float(longtitude) < 442.4900):
+                    print ("Longtitude within range", longtitude)
+                else:
+                    print ("Longtitude outside range", longtitude)
+
+                ## When all data is succesfull exit the loop with a parameter bigger then zero (0)
+                #
+                if (lattitude != ""):
+                    succesvol = succesvol + 1
+    else:
+        print ("Not enough data in: ", readlogfile, " --> There are ", count, " lines detected")
+        nrloops = nrloops + 1
+        time.sleep(300)
 
 #############################################################################
 ##
